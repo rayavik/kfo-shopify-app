@@ -6,42 +6,25 @@ import { authenticate } from "../shopify.server";
 import OrderTable from "../components/OrderTable";
 import OrderInput from "../components/OrderInput";
 import DraftOrderTable from "../components/DraftOrderTable";
-
+import {
+  createDraftOrder,
+  deleteDraftOrder,
+  getDraftOrders,
+} from "../libs/graphql/draft_order";
+import { getCustomerByEmail } from "../libs/graphql/customer";
+import { getAllDiscounts } from "../libs/models/discount";
+import { productsBySkus } from "../libs/graphql/product";
 
 export async function loader({ request, params }) {
   try {
     const { admin, session } = await authenticate.admin(request);
-  
 
-    const response = await admin.graphql(`#graphql
-      query {
-            draftOrders(first: 100, query: "status:OPEN" reverse:true) {
-              edges {
-                node {
-                  id
-                  name
-                  createdAt
-                  email
-                  totalPriceSet {
-                    presentmentMoney {
-                      amount
-                      currencyCode
-                    }
-                  }
-                }
-              }
-            }
-          }
-    `);
-
-    const data = await response.json();
-    console.log( data.data.draftOrders.edges)
+    const data = await getDraftOrders(admin);
     return {
       status: "success",
-      data: data.data.draftOrders.edges,
+      data: data.data,
     };
   } catch (error) {
-    console.error("Failed to load data:", error);
     return {
       status: "failed",
       error,
@@ -73,23 +56,25 @@ export default function PageComponent() {
   }, [loaderData]);
 
   useEffect(() => {
-    if (act_data && act_data.data && act_data.data.draftOrderCreate && act_data.data.draftOrderCreate.draftOrder) {
-      shopify.toast.show("Draft Order Created");
-      setLoading(false); // Stop spinner on success
+    if (act_data?.status === "success") {
+      //shopify.toast.show("Draft Order Created");
+      setOrders(act_data.data);
+      setLoading(false);
+    } 
+    else{
+      console.log(act_data)
     }
   }, [act_data]);
 
   const submit = useSubmit();
-
+  const deleteOrder = (id) => {
+    submit({ id }, { method: "post" });
+  };
   const handleSaveOrder = () => {
     setLoading(true); // Start spinner
     setError(null); // Reset error
     const dt = JSON.stringify(jsonData);
-    submit({ dt, type: "newcustomer" }, { method: "post" }).catch((err) => {
-      setLoading(false); // Stop spinner on error
-      setError("Failed to create draft order.");
-      shopify.toast.show("Error creating order: " + err.message);
-    });
+    submit({ dt }, { method: "post" });
   };
 
   return (
@@ -102,11 +87,11 @@ export default function PageComponent() {
         },
       }}
     >
-      {/* Show spinner while loading */}
+      
       {loading ? (
         <Spinner accessibilityLabel="Loading..." size="large" />
       ) : (
-        <DraftOrderTable data={orders}/>
+        <DraftOrderTable data={orders} deleteOrder={deleteOrder} />
       )}
 
       <Modal id="addcsv" variant="base">
@@ -119,200 +104,139 @@ export default function PageComponent() {
             variant="primary"
             onClick={() => {
               shopify.modal.hide("addcsv");
-              handleSaveOrder(); // Trigger save order function
+              handleSaveOrder(); 
             }}
           >
             Save
           </button>
         </TitleBar>
       </Modal>
-
-      {/* Display error toast if an error occurs */}
       {error && <div>{shopify.toast.show(error)}</div>}
     </Page>
   );
 }
 
-
 export async function action({ request }) {
-
-  function getDiscount(data,collectionName,type) {
-    const item = data.find(obj => obj.collection === collectionName);
-    return item && item[type] ? item[type] : 0;
+  function getDiscount(data, collectionName, type) {
+    const normalizedCollectionName = collectionName.toLowerCase();
+    const normalizedType = type.toLowerCase();
+    const item = data.find(
+      (obj) => obj.collection.toLowerCase() === normalizedCollectionName,
+    );
+    return item && item[normalizedType] ? item[normalizedType] : 0;
   }
 
-  
-
+  function findProductBySku(products, sku) {
+    const normalizedSku = sku.trim().toLowerCase();
+    return products.find((product) => {
+      const normalizedProductSku = product.sku.trim().toLowerCase();
+      return normalizedProductSku === normalizedSku;
+    });
+  }
 
   try {
-    const { admin, session } = await authenticate.admin(request);
+    const { admin } = await authenticate.admin(request);
     const dt = { ...Object.fromEntries(await request.formData()) };
-    const items = JSON.parse(dt.dt);
-    const note = items[0].Job_Number;
-    let customer=null;
-    const customer_email=items[0].Customer_Email;
-    let customer_type="";
-    if(customer_email){
-      const response = await admin.graphql(`#graphql
-       query GetCustomerByEmail($email: String!) {
-  customers(first: 1, query: $email) {
-    edges {
-      node {
-        id
-        tags
-        email
+    if (dt.id) {
+      let res = await deleteDraftOrder(admin, dt.id);
+      console.log(res);
+      if (res.status == "success") {
+        let temp = await getDraftOrders(admin);
+        return temp;
       }
-    }
-  }
-}
-      `,
-        {
-          variables: {
-            email: customer_email,
-          },
-        },
-      );
+      return res;
+    } else {
+      const items = JSON.parse(dt.dt);
+      const customer_email = items[0].Customer_Email
+        ? items[0].Customer_Email
+        : "info@totalcabinetry.com.au";
+      const note = items[0].Job_Number;
+      let customer = null;
+      let customerType = "Retail_Guest"; //Cabinetmaker,Trade,Showroom,Retail_Guest
 
-      const data = await response.json();
-      if(data.data.customers.edges.length>0)
-          customer=data.data.customers.edges[0].node;
-      if(data.data.customers.edges.length>0 && data.data.customers.edges[0].node.tags.length>0){
-        customer_type=data.data.customers.edges[0].node.tags[0];
+      let res = await getCustomerByEmail(admin, customer_email);
+      if (res.status == "success" && res.customer) {
+        customer = res.customer;
+        if (customer.metafield) {
+          customerType = customer.metafield.value;
+        }
       }
-    }
-   
+      let discounts = await getAllDiscounts();
+      discounts = discounts.data;
+      const query = items
+        .map((item) => {
+          const cleanedMatId = item.Mat_id.trim().split(" ")[0];
+          return `sku:${cleanedMatId}`;
+        })
+        .join(" OR ");
 
-    let discounts = await fetch("https://www.kitchenfactoryonline.com.au/shopifyapp/api/discount");
-    discounts = await discounts.json();
-    //console.log(discounts.data,customer_type)
-    
+      let lineItems = [];
 
+      let store_variants = await productsBySkus(admin, query);
+      store_variants = store_variants.data;
 
+      items.map((item) => {
+        let variant = findProductBySku(store_variants, item.Mat_id);
+        if (variant) {
+          let discount = getDiscount(
+            discounts,
+            variant.product.tags[0],
+            customerType,
+          );
 
-
-    const fetchProductVariants = async (sku) => {
-
-      try {
-        const response = await admin.graphql(
-          `#graphql
-          query query($sku: String!) {
-            productVariants(first: 1, query: $sku) {
-              nodes {
-                id
-                product{
-                tags }
-              }
-            }
+          if (discount > 0) {
+            lineItems.push({
+              variantId: variant.id,
+              quantity: parseInt(item.Qty),
+              customAttributes: {
+                key: "Description",
+                value: variant.product.description,
+              },
+              appliedDiscount: {
+                value: parseFloat(discount),
+                valueType: "PERCENTAGE",
+              },
+            });
+          } else {
+            lineItems.push({
+              variantId: variant.id,
+              quantity: parseInt(item.Qty),
+              customAttributes: {
+                key: "Description",
+                value: variant.product.description,
+              },
+            });
           }
-        `,
-          {
-            variables: {
-              sku: `sku:${sku}`,
-            },
-          },
-        );
-
-        const data = await response.json();
-        return data;
-      } catch (error) {
-        console.error(`Error fetching product variants for SKU ${sku}:`, error);
-        return null;
-      }
-    };
-
-    const results = await Promise.all(
-      items.map((item) => fetchProductVariants(item.Mat_id)),
-    );
-
-    let temp = [];
-    results.forEach((item, index) => {
-  
-      let qt = parseInt(items[index].Qty);
-      if (qt < 1) qt = 999;
-
-      if (item.data.productVariants.nodes.length > 0) {
-        let discountamount=getDiscount(discounts.data,item.data.productVariants.nodes[0].product.tags[0],customer_type);
-       if(discountamount>0){
-        temp.push({
-          variantId: item.data.productVariants.nodes[0].id,
-          quantity: qt,
-          customAttributes: {
-            key: "Description",
-            value: items[index].Description,
-          },
-          appliedDiscount:{value:  20,valueType: "PERCENTAGE"}
-        });
-       }
-       else{
-        temp.push({
-          variantId: item.data.productVariants.nodes[0].id,
-          quantity: qt,
-          customAttributes: {
-            key: "Description",
-            value: items[index].Description,
-          }
-        });
-       }
-        
-      } else {
-        if (items[index].Mat_id) {
-          temp.push({
-            title: items[index].KFO_Item_SKU,
-            originalUnitPrice: parseFloat(
-              items[index].Unit.match(/[\d,]+(\.\d+)?/)
-                ? items[index].Unit.match(/[\d,]+(\.\d+)?/)[0]
-                : 0,
-            ),
-            quantity: qt,
+        } else {
+          lineItems.push({
+            title: item.KFO_Item_SKU,
+            originalUnitPrice: parseFloat(item.Unit),
+            quantity: parseInt(item.Qty),
             customAttributes: {
               key: "Description",
-              value: items[index].Description,
+              value: item.Description + " ( " + item.Mat_id + " )",
             },
           });
         }
+      });
+
+      let response = await createDraftOrder(admin, {
+        customer,
+        lineItems,
+        note,
+      });
+
+      if (response.status == "success") {
+        let res = await getDraftOrders(admin);
+        return res;
+      } else {
+        return response;
       }
-    });
-
-   // console.log(temp)
-    const createOrder = async () => {
-      try {
-        const response = await admin.graphql(
-          `#graphql
-          mutation draftOrderCreate($input: DraftOrderInput!) {
-            draftOrderCreate(input: $input) {
-              draftOrder {
-                id
-              }
-            }
-          }
-        `,
-          {
-            variables: {
-              input: {
-                note: note,
-                customerId: customer.id,
-                email: customer.email,
-                lineItems: temp,
-              },
-            },
-          },
-        );
-
-        const data = await response.json();
-        return data;
-      } catch (error) {
-        console.error("Error Creating", error);
-        return error;
-      }
-    };
-
-    let re = await createOrder();
-   return re;
-   //return null;
+    }
   } catch (error) {
-    console.error("Error in action function:", error);
+    console.log(error)
     return {
-      status: "failed",
+      status: "error",
       error,
     };
   }

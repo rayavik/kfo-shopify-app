@@ -4,13 +4,13 @@ import {
     Text,
     Badge,
     Button,
-    Link,
+    ButtonGroup,
   } from '@shopify/polaris';
   import React from 'react';
   import {
-    ViewIcon
+    ViewIcon,DeleteIcon 
   } from '@shopify/polaris-icons';
-  export default function DraftOrderTable({data}) {
+  export default function DraftOrderTable({data,deleteOrder}) {
     const resourceName = {
       singular: 'order',
       plural: 'orders',
@@ -41,7 +41,14 @@ import {
        
           <IndexTable.Cell>{node.totalPriceSet.presentmentMoney.amount} {node.totalPriceSet.presentmentMoney.currencyCode} </IndexTable.Cell>
           <IndexTable.Cell>
-            <IndexTable.Cell><Button icon={ViewIcon} url={'/app/draft/'+node.id.match(/\d+/)[0]}></Button></IndexTable.Cell>
+          <ButtonGroup gap='loose'>
+            
+            <Button icon={ViewIcon} url={'/app/draft/'+node.id.match(/\d+/)[0]}></Button>
+            <Button icon={DeleteIcon} tone='critical' onClick={()=>{deleteOrder(node.id)}}></Button>
+
+            </ButtonGroup>
+
+      
           </IndexTable.Cell>
 
         </IndexTable.Row>

@@ -1,53 +1,18 @@
-import { useActionData, useLoaderData, useSubmit } from "@remix-run/react";
-import { Modal, TitleBar, useAppBridge } from "@shopify/app-bridge-react";
+import { useLoaderData, useSubmit } from "@remix-run/react";
 import { Page, Spinner } from "@shopify/polaris";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { authenticate } from "../shopify.server";
 import OrderTable from "../components/OrderTable";
+import { getOrders } from "../libs/graphql/order";
 
-// Load the basic data before rendering the page
-export async function loader({ request, params }) {
+export async function loader({ request }) {
   try {
-    const { admin, session } = await authenticate.admin(request);
-  
+    const { admin } = await authenticate.admin(request);
 
-    const response = await admin.graphql(`#graphql
-      query {
-        orders(first: 250, reverse:true, query: "status:open") {
-          edges {
-            node {
-              id
-              name
-              totalPriceSet {
-                shopMoney {
-                  amount
-                  currencyCode
-                }
-              }
-              confirmed
-              closed
-              displayFulfillmentStatus
-              createdAt
-              fullyPaid
-              email
-              lineItems(first: 100) {
-                nodes {
-                  id
-                }
-              }
-              customer {
-                displayName
-              }
-            }
-          }
-        }
-      }
-    `);
-
-    const data = await response.json();
+    const data = await getOrders(admin);
     return {
       status: "success",
-      data: data.data.orders.edges,
+      data: data.data,
     };
   } catch (error) {
     console.error("Failed to load data:", error);
@@ -60,14 +25,9 @@ export async function loader({ request, params }) {
 
 export default function PageComponent() {
   const loaderData = useLoaderData();
-  const act_data = useActionData();
-
-  console.log(loaderData)
-
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(false); // For spinner
-  const [error, setError] = useState(null); // For error
-
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null); 
 
   useEffect(() => {
     if (loaderData.status === "success") {
@@ -78,25 +38,17 @@ export default function PageComponent() {
     }
   }, [loaderData]);
 
-  useEffect(() => {
-    if (act_data && act_data.data && act_data.data.draftOrderCreate && act_data.data.draftOrderCreate.draftOrder) {
-      shopify.toast.show("Draft Order Created");
-      setLoading(false); // Stop spinner on success
-    }
-  }, [act_data]);
-
-
 
   return (
-    <Page
-      title="Manage Order"
-    >
+    <Page title="Manage Order">
       {loading ? (
         <Spinner accessibilityLabel="Loading..." size="large" />
-      ) :<><OrderTable data={orders}/></>}
+      ) : (
+        <>
+          <OrderTable data={orders}  />
+        </>
+      )}
       {error && <div>{shopify.toast.show(error)}</div>}
     </Page>
   );
 }
-
-

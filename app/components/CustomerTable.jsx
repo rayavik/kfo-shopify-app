@@ -1,4 +1,4 @@
-import {ViewIcon} from '@shopify/polaris-icons';
+import {EditIcon, ViewIcon} from '@shopify/polaris-icons';
 import {
     IndexTable,
     Card,
@@ -8,7 +8,7 @@ import {
 } from '@shopify/polaris';
 import React, {useState} from 'react';
 
-export default function({data}) {
+export default function({data,fun}) {
     const [searchQuery, setSearchQuery] = useState('');
 
     const resourceName = {
@@ -29,6 +29,7 @@ export default function({data}) {
 
     const rowMarkup = filteredData.map(
         ({node, id}, index) => (
+            
             <IndexTable.Row
                 id={id}
                 key={id}
@@ -41,9 +42,8 @@ export default function({data}) {
                 </IndexTable.Cell>
                 <IndexTable.Cell>{node.email}</IndexTable.Cell>
                 <IndexTable.Cell>{node.phone}</IndexTable.Cell>
-                <IndexTable.Cell>{node.verifiedEmail ? "Yes" : "No"}</IndexTable.Cell>
                 <IndexTable.Cell>{node.metafield ? node.metafield.value : ""}</IndexTable.Cell>
-                <IndexTable.Cell>{node.defaultAddress ? node.defaultAddress.city : ""}</IndexTable.Cell>
+                <IndexTable.Cell><Button onClick={()=>{fun(node)}} icon={EditIcon}></Button></IndexTable.Cell>
             </IndexTable.Row>
         ),
     );
@@ -67,9 +67,8 @@ export default function({data}) {
                     {title: 'Name'},
                     {title: 'Email'},
                     {title: 'Phone'},
-                    {title: 'Email Verified'},
                     {title: 'Customer Type'},
-                    {title: 'Address'},
+                    {title: 'Action'},
                 ]}
             >
                 {rowMarkup}

@@ -37,20 +37,20 @@ export default function LineItem(props) {
 
 
   useEffect(() => {
-    setComments(props.comments.filter(item => item.lineItemId === props.data.id.substring(23)));
-    setInfo(props.infos.filter(item => item.lineItemId === props.data.id.substring(23)));
-    setData(props.data);
-    let tmp=props.infos.filter(item => item.lineItemId === props.data.id.substring(23));
-     if(tmp.length){
-      setInput({
-       inventoryType: tmp[0].inventoryType,
-       status: tmp[0].status,
-       spd:tmp[0].promiseDate    ,
-       ris: tmp[0].reciveStock,
-       srd: tmp[0].readyDate,    
-       id:tmp[0].id,
-      }) 
-     }
+    // setComments(props.comments.filter(item => item.lineItemId === props.data.id.substring(23)));
+    // setInfo(props.infos.filter(item => item.lineItemId === props.data.id.substring(23)));
+    // setData(props.data);
+    // let tmp=props.infos.filter(item => item.lineItemId === props.data.id.substring(23));
+    //  if(tmp.length){
+    //   setInput({
+    //    inventoryType: tmp[0].inventoryType,
+    //    status: tmp[0].status,
+    //    spd:tmp[0].promiseDate    ,
+    //    ris: tmp[0].reciveStock,
+    //    srd: tmp[0].readyDate,    
+    //    id:tmp[0].id,
+    //   }) 
+    //  }
   
   }, [])
   
@@ -58,7 +58,6 @@ export default function LineItem(props) {
 
   
   const updateStatus = useCallback(() => {
-    console.log("Update Calll")
     let reqdata = JSON.stringify({
       lineItemId: data.id.substring(23),
       inventoryType: input.inventoryType,

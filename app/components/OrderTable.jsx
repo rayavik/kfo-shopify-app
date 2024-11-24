@@ -1,4 +1,5 @@
 import {
+  DeleteIcon,
     ViewIcon
   } from '@shopify/polaris-icons';
 import {
@@ -7,39 +8,12 @@ import {
     Text,
     Badge,
     Button,
+    ButtonGroup,
   } from '@shopify/polaris';
   import React from 'react';
   
-  export default function OrderTable({data}) {
-    const orders = [
-      {
-        id: '1020',
-        order: '#1020',
-        date: 'Jul 20 at 4:34pm',
-        customer: 'Jaydon Stanton',
-        total: '$969.44',
-        paymentStatus: <Badge progress="complete">Paid</Badge>,
-        fulfillmentStatus: <Badge progress="incomplete">Unfulfilled</Badge>,
-      },
-      {
-        id: '1019',
-        order: '#1019',
-        date: 'Jul 20 at 3:46pm',
-        customer: 'Ruben Westerfelt',
-        total: '$701.19',
-        paymentStatus: <Badge progress="partiallyComplete">Partially paid</Badge>,
-        fulfillmentStatus: <Badge progress="incomplete">Unfulfilled</Badge>,
-      },
-      {
-        id: '1018',
-        order: '#1018',
-        date: 'Jul 20 at 3.44pm',
-        customer: 'Leo Carder',
-        total: '$798.24',
-        paymentStatus: <Badge progress="complete">Paid</Badge>,
-        fulfillmentStatus: <Badge progress="incomplete">Unfulfilled</Badge>,
-      },
-    ];
+  export default function OrderTable({data,deleteOrder}) {
+
     const resourceName = {
       singular: 'order',
       plural: 'orders',
@@ -71,7 +45,9 @@ import {
           </IndexTable.Cell>
           <IndexTable.Cell>{node.lineItems.nodes.length}</IndexTable.Cell>
           <IndexTable.Cell>{node.displayFulfillmentStatus}</IndexTable.Cell>
-          <IndexTable.Cell><Button icon={ViewIcon} url={'/app/order/'+node.id.match(/\d+/)[0]}></Button></IndexTable.Cell>
+          <IndexTable.Cell>            
+            <Button icon={ViewIcon} url={'/app/order/'+node.id.match(/\d+/)[0]}></Button>
+          </IndexTable.Cell>
         </IndexTable.Row>
       ),
     );

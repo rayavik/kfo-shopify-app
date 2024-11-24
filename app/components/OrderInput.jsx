@@ -20,7 +20,6 @@ export default function OrderInput(props) {
               skipEmptyLines: true,
             }).data;
            props.handle(parsedData);
-            // Log the JSON data
           };
           reader.readAsText(file);
         }
@@ -36,7 +35,7 @@ export default function OrderInput(props) {
   );
 
   const uploadedFiles = files.length > 0 && (
-    <BlockStack vertical={true}>
+    <BlockStack vertical={"true"}>
       <BlockStack alignment="center">
         <Thumbnail
           size="small"
