@@ -13,8 +13,7 @@ import GroupLineItems from "./GroupLineItems";
 import StatusForm from "./StatusForm";
 import ChatBox from "./ChatBox";
 export default function GroupCard({ title ,items}) {
-    console.log(items)
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const handleToggle = useCallback(() => setOpen((open) => !open), []);
   return (
     <div style={{ marginBottom: "2%" }}>

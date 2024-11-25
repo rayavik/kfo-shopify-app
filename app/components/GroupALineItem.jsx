@@ -1,6 +1,6 @@
 
-export default function GroupALineItem() {
+export default function GroupALineItem({item,comments}) {
   return (
-    <div>GroupALineItem</div>
+    <div>Group A Line Item {item.tile}</div>
   )
 }

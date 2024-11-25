@@ -10,8 +10,9 @@ import {
   } from "@shopify/polaris";
   import { useState, useCallback } from "react";
   import { ToggleOffIcon } from "@shopify/polaris-icons";
-  export default function GroupACard({ title }) {
-    const [open, setOpen] = useState(true);
+import GroupALineItem from "./GroupALineItem";
+  export default function GroupACard({ items ,comments}) {
+    const [open, setOpen] = useState(false);
     const handleToggle = useCallback(() => setOpen((open) => !open), []);
     return (
       <div style={{ marginBottom: "2%" }}>
@@ -33,14 +34,11 @@ import {
             transition={{ duration: "500ms", timingFunction: "ease-in-out" }}
             expandOnPrint
           >
-            <TextContainer>
-              <p>
-                Your mailing list lets you contact customers or visitors who have
-                shown an interest in your store. Reach out to them with exclusive
-                offers or updates about your products.
-              </p>
-              <Link url="#">Test link</Link>
-            </TextContainer>
+           {
+            items.length>0 && items.map((i)=>{
+              return <GroupALineItem item={i} comments={comments}/>
+            })
+           }
           </Collapsible>
         </Card>
       </div>

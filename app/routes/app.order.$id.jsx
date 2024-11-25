@@ -56,9 +56,6 @@ export async function loader({ request, params }) {
     let othersGroupStatus=await getAllGroupAitemsStatus(params.id);
     let othersGroupcomments=await getAllOthersGroupComments(params.id);
 
- 
-
-
     return {
       status: "success",
       data: order.data,
