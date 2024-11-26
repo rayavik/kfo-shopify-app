@@ -1,15 +1,18 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "d634ba937320a5e810aadc9b968cd418"
-name = "kfo-order-management-dev"
-handle = "kfo-order-management-dev"
-application_url = "https://growth-promising-british-hydrocodone.trycloudflare.com"
+client_id = "078842956c2220c00f9bfacccc278047"
+application_url = "https://dept-debate-intervals-trap.trycloudflare.com"
 embedded = true
+name = "kfo-dev"
+handle = "kfo-dev"
 
 [build]
-automatically_update_urls_on_dev = true
-dev_store_url = "profill-dev.myshopify.com"
 include_config_on_deploy = true
+dev_store_url = "profill-dev.myshopify.com"
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2024-10"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
@@ -17,13 +20,10 @@ scopes = "read_assigned_fulfillment_orders,read_checkouts,read_customers,read_di
 
 [auth]
 redirect_urls = [
-  "https://growth-promising-british-hydrocodone.trycloudflare.com/auth/callback",
-  "https://growth-promising-british-hydrocodone.trycloudflare.com/auth/shopify/callback",
-  "https://growth-promising-british-hydrocodone.trycloudflare.com/api/auth/callback"
+  "https://dept-debate-intervals-trap.trycloudflare.com/auth/callback",
+  "https://dept-debate-intervals-trap.trycloudflare.com/auth/shopify/callback",
+  "https://dept-debate-intervals-trap.trycloudflare.com/api/auth/callback"
 ]
-
-[webhooks]
-api_version = "2024-07"
 
 [pos]
 embedded = false
